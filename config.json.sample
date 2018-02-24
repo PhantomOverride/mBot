@@ -1,0 +1,20 @@
+{
+	"token"  : "paste-bot-token-here",
+	"me": "numeric-id-of-bot-id",
+	"prefix" : "!",
+	"admins": [
+			"write",
+			"\@mynickname",
+			"and see your ID in the chat. Paste only the number"
+		],
+	"markov_file": "markov.txt",
+	"announcement_channel": "Use dev mode and copy id of channel to be used for announcements",
+	"subway_tts": false,
+	"subway_open": "Subway orders are up! https://wonderlan.se/subway/",
+	"subway_30m": "Ordered food yet? Subway orders close in _30_ minutes! https://wonderlan.se/subway/",
+	"subway_arrive": "Attention - Subway has arrived!",
+	"info_message": "Välkommen till WonderLAN!\n\nFör mer information, gå till https://wonderlan.se/",
+	"help_message": "Välkommen till WonderLAN!\n\nFör mer information, gå till https://wonderlan.se/",
+	"crew_message": "Crewmessage",
+	"admin_message": "Commands: subway, ..."
+}
