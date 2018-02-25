@@ -16,5 +16,8 @@
 	"info_message": "Välkommen till WonderLAN!\n\nFör mer information, gå till https://wonderlan.se/",
 	"help_message": "Välkommen till WonderLAN!\n\nFör mer information, gå till https://wonderlan.se/",
 	"crew_message": "Crewmessage",
-	"admin_message": "Commands: subway, ..."
+	"admin_message": "Commands: help, info, crew, joke, ?, talk [#], admin, subway <open, 30m, arrive>, ping, say <message>",
+	"talk": false,
+	"talk_rate": 50,
+	"talk_reply_rate": 2
 }

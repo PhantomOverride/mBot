@@ -1,13 +1,14 @@
-const config = require("./config.json");
+var config = require("./config.json");
 
 const Discord = require("discord.js");
 const client = new Discord.Client();
 
+const https = require('https');
+
 var fs = require('fs');
 var markov = require('markov');
 
-var m = markov();
-console.log(__dirname + config.markov_file);
+var m = markov(4);
 var s = fs.createReadStream(__dirname + "/" + config.markov_file);
 
 console.log("[ + ] Starting...")
@@ -42,6 +43,89 @@ function reply_channel_chat(message){
   t=t2;
   reply = m.respond(t).join(' ');
   message.reply(reply);
+}
+
+function do_request(options,callback){
+  https.get(options, (resp) => {
+  let data = '';
+
+  // A chunk of data has been recieved.
+  resp.on('data', (chunk) => {
+    data += chunk;
+  });
+
+  // The whole response has been received. Print out the result.
+  resp.on('end', () => {
+    //console.log(data);
+    callback(data);
+  });
+
+  }).on("error", (err) => {
+    console.log("Error: " + err.message);
+  });
+}
+
+function do_joke(message){
+  var options = {
+      hostname: 'icanhazdadjoke.com',
+      port: 443,
+      path: '/',
+      method: 'GET',
+      headers: {
+        'content-type': 'text/plain',
+        'accept': 'text/plain',
+        'user-agent': 'mbot',
+        'connection': 'close',
+      }
+    }
+
+    do_request(options, function(r){
+      message.channel.send(r);
+    });
+}
+
+function do_yesno(message){
+  //https://yesno.wtf/api/
+  //{"answer":"yes","forced":false,"image":"https://yesno.wtf/assets/yes/12-e4f57c8f172c51fdd983c2837349f853.gif"}
+  var options = {
+      hostname: 'yesno.wtf',
+      port: 443,
+      path: '/api/',
+      method: 'GET',
+      headers: {
+        'content-type': 'text/plain',
+        'accept': 'text/plain',
+        'user-agent': 'mbot',
+        'connection': 'close',
+      }
+    }
+
+    do_request(options, function(r){
+      var j = JSON.parse(r);
+      message.channel.send(j.image);
+    });
+}
+
+function get_text_no_tags(message){
+  t = message.content;
+  return t.replace(/\<\@[^>]*\>/g,'');
+}
+
+function get_random_int(max) {
+  return Math.floor(Math.random() * Math.floor(max));
+}
+
+function talkative(message){
+  var roll = get_random_int(config.talk_rate);
+  if(roll === 0){
+    roll = roll = get_random_int(config.talk_reply_rate);
+    if(roll === 0){
+      message.reply( m.respond( get_text_no_tags(message) ).join(' ') );
+    }
+    else{
+      message.channel.send( m.respond( get_text_no_tags(message) ).join(' ') );
+    }
+  }
 }
 
 function append_log(message){
@@ -83,7 +167,12 @@ client.on("message", async message => {
   }
   
   // Also good practice to ignore any message that does not start with our prefix, 
-  if(message.content.indexOf(config.prefix) !== 0) return;
+  if(message.content.indexOf(config.prefix) !== 0){
+    if(config.talk){
+      talkative(message);
+    }
+    return;
+  }
   //console.log("Got " + message.content);
   
   // Here we separate our "command" name, and our "arguments" for the command. 
@@ -97,25 +186,52 @@ client.on("message", async message => {
     console.log("[ + ] Serving command help");
     message.author.sendMessage(config.help_message);
   }
-  if(command === "info") {
+  else if(command === "info") {
     console.log("[ + ] Serving command info");
     message.author.sendMessage(config.info_message);
   }
-  if(command === "crew") {
+  else if(command === "crew") {
     console.log("[ + ] Serving command crew");
     message.author.sendMessage(config.crew_message);
   }
 
+  else if(command === "joke"){
+    console.log("[ + ] Serving command joke");
+    do_joke(message);
+  }
+  else if (command === "?"){
+    console.log("[ + ] Serving command yesno");
+    do_yesno(message);
+  }
+
   // ----------------------------------
   // All below here require admin privs
-  if(!is_trusted(message)) return;
+  else if(!is_trusted(message)) return;
 
-  if(command === "admin") {
+  else if(command === "talk") {
+    console.log("[ + ] Serving command talk");
+    if(args.length < 1){
+      if(config.talk){
+        config.talk = false;
+        message.reply("setting `talk` to false.");
+      }
+      else{
+        config.talk = true;
+        message.reply("setting `talk` to true.");
+      }
+    }
+    else{
+      l = parseInt(args[0]);
+      message.channel.send( m.respond(m.pick(),l).join(' ') );
+    }
+  }
+
+  else if(command === "admin") {
     console.log("[ + ] Serving command admin");
     message.author.sendMessage(config.admin_message);
   }
 
-  if(command === "subway") {
+  else if(command === "subway") {
     console.log("[ + ] Serving command subway");
     if(args.length < 1){
       message.reply("What about Subway?");
@@ -141,14 +257,14 @@ client.on("message", async message => {
     }
   }
 
-  if(command === "ping") {
+  else if(command === "ping") {
     console.log("[ + ] Serving command ping");
 
-    const m = await message.channel.send("Ping?");
-    m.edit(`Pong! Latency is ${m.createdTimestamp - message.createdTimestamp}ms. API Latency is ${Math.round(client.ping)}ms`);
+    const mm = await message.channel.send("Ping?");
+    mm.edit(`Pong! Latency is ${m.createdTimestamp - message.createdTimestamp}ms. API Latency is ${Math.round(client.ping)}ms`);
   }
   
-  if(command === "say") {
+  else if(command === "say") {
     console.log("[ + ] Serving command say");
     // makes the bot say something and delete the message. As an example, it's open to anyone to use. 
     // To get the "message" itself we join the `args` back into a string with spaces: 
@@ -157,6 +273,10 @@ client.on("message", async message => {
     message.delete().catch(O_o=>{}); 
     // And we get the bot to say the thing: 
     message.channel.send(sayMessage);
+  }
+
+  else {
+    message.author.sendMessage("Unknown command :(.");
   }
   
 });
